@@ -1,0 +1,21 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.22.2",
+    "sdkVersions": {
+      "@microsoft/microsoft-graph-client": "3.0.2",
+      "@microsoft/teams-js": "2.24.0"
+    },
+    "version": "1.21.1",
+    "libraryName": "mos-ai-presentation",
+    "libraryId": "86e4635e-3773-4395-b0cc-a235f56adacd",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "mos-ai-presentation",
+    "solutionShortDescription": "MoS AI-introduktion presentation web part",
+    "isDomainIsolated": false,
+    "componentType": "webpart",
+    "templateType": "minimal"
+  }
+}

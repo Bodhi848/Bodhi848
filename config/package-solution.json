@@ -1,0 +1,40 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/package-solution.schema.json",
+  "solution": {
+    "name": "mos-ai-presentation-client-side-solution",
+    "id": "86e4635e-3773-4395-b0cc-a235f56adacd",
+    "version": "1.0.0.0",
+    "includeClientSideAssets": true,
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "developer": {
+      "name": "Eslövs kommun — Miljö och Samhällsbyggnad",
+      "websiteUrl": "",
+      "privacyUrl": "",
+      "termsOfUseUrl": "",
+      "mpnId": ""
+    },
+    "metadata": {
+      "shortDescription": {
+        "default": "AI-introduktion presentation (MoS, Eslövs kommun)"
+      },
+      "longDescription": {
+        "default": "Bildspelsliknande webbdel som visar AI-introduktionen för Miljö och Samhällsbyggnad. Kräver inget custom script, ingen iframe och inga externa CDN-beroenden."
+      },
+      "screenshotPaths": [],
+      "videoUrl": "",
+      "categories": []
+    },
+    "features": [
+      {
+        "title": "mos-ai-presentation Feature",
+        "description": "The feature that activates elements of the mos-ai-presentation solution.",
+        "id": "ee75e3f2-d801-47f5-9377-6dc62acf78fb",
+        "version": "1.0.0.0"
+      }
+    ]
+  },
+  "paths": {
+    "zippedPackage": "solution/mos-ai-presentation.sppkg"
+  }
+}
