@@ -21,13 +21,13 @@ Webbdelen är en ombyggnad av den tidigare fristående HTML-presentationen
 i en kontrollerad, förvaltningsbar och säker SPFx-struktur som går att
 vidareutveckla.
 
-## Omfattning (detta steg)
+## Omfattning
 
-> **Testomfång:** De **fem första bilderna** är fullt migrerade som React-komponenter,
-> inklusive de interaktiva delarna (timer på bild 03, klickbara ringar/flikar på
-> bild 04). Återstående bilder (06–19), appendix (A1–A8) och backup (B1–B2) är nästa
-> steg — de återanvändbara interaktionskomponenterna (stegvis avslöjande, quiz, QR,
-> bildplats) finns redan under `components/interactive/`. Se `MIGRATION_NOTES.md`.
+> **Alla 29 bilder är migrerade** som React-komponenter (19 huvud + 8 appendix A1–A8 +
+> 2 backup B1–B2). Interaktioner reimplementerade i React: timer (bild 03), klickbara
+> ringar/flikar (bild 04), 3-stegs felavslöjande (bild 14), quiz-avslöjande (bild 17),
+> QR på slutbilden (bild 19, paketerat `qrcode`-bibliotek) och bildplats-backup (B1/B2).
+> Se `MIGRATION_NOTES.md` för detaljer och kvarvarande teknisk skuld.
 
 ## Förutsättningar
 
@@ -109,11 +109,14 @@ src/webparts/mosAiPresentation/
     SlideNavigation.tsx · ProgressBar.tsx · SpeakerNotes.tsx
     useFitScale.ts · useDeckKeyboard.ts  # Hooks (skala + tangentbord)
     interactive/
-      CountdownTimer.tsx                 # Bild 03 (används)
-      ConceptVenn.tsx                    # Bild 04 (används)
-      QuizCard.tsx · InteractiveStep.tsx · QrCode.tsx · ImageSlot.tsx  # redo för 06–29
+      CountdownTimer.tsx                 # Bild 03
+      ConceptVenn.tsx                    # Bild 04
+      InteractiveStep.tsx                # Bild 14 (3-stegs avslöjande)
+      QuizCard.tsx                       # Bild 17
+      QrCode.tsx                         # Bild 19 (paketerat qrcode)
+      ImageSlot.tsx                      # Backup B1/B2
     slides/
-      Slide01Cover.tsx … Slide05Tools.tsx
+      Slide01Cover.tsx … Slide19Rules.tsx, SlideA1Demo3.tsx … SlideB2Backup.tsx
   data/
     types.ts · slides.ts · speakerNotes.ts
   assets/
@@ -122,7 +125,8 @@ src/webparts/mosAiPresentation/
 
 ## Kända begränsningar
 
-- Endast bild 01–05 är migrerade i detta steg (se `MIGRATION_NOTES.md`).
+- Alla 29 bilder är migrerade. Backup B1/B2 visar en platshållare tills en bild-URL
+  konfigureras (se `MIGRATION_NOTES.md`).
 - Originalets varumärkestypsnitt (*Familjen Grotesk*, *Source Sans 3*) laddades från
   Google Fonts (CDN). För att undvika CDN används ett systemtypsnitts-fallback. Lägg
   lokala `woff2`-filer under `assets/fonts` + `@font-face` för exakt typografi.

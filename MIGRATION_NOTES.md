@@ -24,14 +24,15 @@ fullständiga interaktionerna (timer, ringar/flikar, stegvis felexempel, quiz, Q
 Standalone-filerna (1,7 MB) är samma innehåll men med base64-inbäddade assets +
 bundler-manifest och används **inte**.
 
-### Testomfång (detta steg)
-Bild **01–05** är fullt migrerade. Övriga bilder (06–19, A1–A8, B1–B2) är nästa
-steg; deras innehåll finns i `v11.html` och de återanvändbara interaktions­
-komponenterna finns redan i `components/interactive/`.
+### Omfattning
+**Alla 29 bilder** är migrerade som React-komponenter (19 huvud + 8 appendix A1–A8 +
+2 backup B1–B2). Interaktioner reimplementerade i React: timer (03), ringar/flikar (04),
+3-stegs felavslöjande (14), quiz (17), QR (19), bildplats-backup (B1/B2).
 
 ### Använda assets
-Bild 01–05 är rent CSS/text och refererar **inga** bildfiler. Skärmdumparna i
-`screenshots/` och `uploads/` är QA-/granskningsartefakter och migrerades inte.
+Bilderna är rent CSS/text och refererar **inga** bildfiler — utom backup B1/B2 som tar
+en konfigurerbar bild-URL. Skärmdumparna i `screenshots/` och `uploads/` är QA-/
+granskningsartefakter och migrerades inte.
 
 ---
 
@@ -86,8 +87,14 @@ Bild 01–05 är rent CSS/text och refererar **inga** bildfiler. Skärmdumparna 
 - **Skalning:** `useFitScale.ts` (ResizeObserver) beräknar `scale = bredd/1920` och
   applicerar `transform: scale()` så originalets pixelbaserade 1920×1080-layout
   bevaras. `fitMode: contain` begränsar dessutom höjden.
-- **Stegvis avslöjande / quiz / QR:** `InteractiveStep.tsx`, `QuizCard.tsx`,
-  `QrCode.tsx` byggda som återanvändbara primitiver (för bild 06–29).
+- **Stegvis avslöjande (bild 14):** `InteractiveStep.tsx` — fråga → markeringar →
+  slutsats. Originalet fångade även piltangenter för att stega; här sker stegningen
+  endast via knappen så att deckets tangentbordsnavigation aldrig kapas (medveten
+  förenkling). Slutsats/takeaway visas i sista steget.
+- **Quiz (bild 17):** `QuizCard.tsx` — klick växlar `.revealed`.
+- **QR (bild 19):** `QrCode.tsx` ritar med paketerade `qrcode`. URL:en är en konstant
+  (`LATHUND_URL`) som ska sättas till den riktiga lathund-länken.
+- **Backup (B1/B2):** `ImageSlot.tsx` visar en konfigurerbar bild-URL.
 
 ### Asset-hantering → SPFx-kompatibel
 - Inga hårdkodade `./uploads/…`/`./screenshots/…`-sökvägar. Lokala assets ska
@@ -99,11 +106,12 @@ Bild 01–05 är rent CSS/text och refererar **inga** bildfiler. Skärmdumparna 
 
 | Risk | Detalj | Förslag |
 |---|---|---|
-| **Bilder som fortfarande renderas via HTML** | Inga — bild 01–05 är ren JSX. Den sanerade HTML-vägen i `Slide.tsx` är ännu inte aktiv. | Vid migrering av statiska bilder 06+: lägg in DOMPurify och sanera. |
+| **Bilder som renderas via HTML** | Inga — alla 29 bilder är ren JSX. Den sanerade HTML-vägen i `Slide.tsx` är en oanvänd reserv (DOMPurify ej inkopplat). | Behåll som reserv; koppla in DOMPurify endast om HTML-bilder införs. |
 | **Typografi** | Varumärkestypsnitten ersatta med systemtypsnitt (för att slippa CDN). | Lägg lokala `woff2` under `assets/fonts` + `@font-face`. |
-| **Alt-text på bilder** | Bild 01–05 saknar bilder, så ej aktuellt. `ImageSlot` har `alt`-prop. | Säkerställ alt-text när backupbilder läggs till. |
-| **Förenklade interaktioner** | Originalets `.play`-animationer (staggered reveal i bild 04) återtriggas vid byte via `key`-remount, inte via MutationObserver. Visuellt likvärdigt. | OK; dokumenterat. |
-| **Övriga komponentstilar** | Endast stilar som bild 01–05 + primitiverna behöver är porterade. | Portera resterande `deck-styles.css`-block tillsammans med bild 06–29. |
+| **QR-länk (bild 19)** | `LATHUND_URL` är en platshållare (`https://eslov.sharepoint.com/`). | Sätt till den riktiga lathund-PDF-länken; överväg en webbdelsegenskap. |
+| **Backup-bilder (B1/B2)** | Visar platshållare tills `ImageSlot src` konfigureras; ingen drag-och-släpp/lagring. | Lägg avidentifierade skärmbilder i ett bibliotek och peka ut URL:en. |
+| **Slide 14 stegning** | Stegas via knapp, inte piltangenter (originalet kapade pilarna). | Acceptabelt; deckets navigation förblir intakt. |
+| **Förenklade interaktioner** | `.play`-animationer (staggered reveal i bild 04) återtriggas vid byte via `key`-remount, inte via MutationObserver. Visuellt likvärdigt. | OK; dokumenterat. |
 | **Appendix-beslut** | Appendix (A1–A8) och backup (B1–B2) läggs **efter** huvudsekvensen och visas bara när `showAppendix` är på (standard av). Matchar originalets ordning. | — |
 | **Teams-stöd** | Manifestet anger Teams-hostar men flödet är endast testat som SharePoint-webbdel. | Verifiera i Teams vid behov. |
 
@@ -117,9 +125,10 @@ Bild 01–05 är rent CSS/text och refererar **inga** bildfiler. Skärmdumparna 
 | `gulp build` (TypeScript, inga typfel) | Se körlogg. |
 | `gulp bundle --ship` | Se körlogg. |
 | `gulp package-solution --ship` (skapar `.sppkg`) | Se körlogg. |
+| `gulp build` / `bundle --ship` / `package-solution --ship` | ✅ Inga TS-/lint-fel; `mos-ai-presentation.sppkg` skapas. |
 | Lokal workbench (`gulp serve`) | Kräver webbläsare/tenant; verifieras manuellt. I container utan webbläsare ersätts detta av build/paket + kodgranskning. |
 | Manuell navigationstest (knappar, ←/→/Home/End, punkter) | Implementerat; verifieras i workbench. |
-| Interaktionstest (timer bild 03, ringar/flikar bild 04, talmanus) | Implementerat; verifieras i workbench. |
+| Interaktionstest (timer 03, ringar/flikar 04, stegning 14, quiz 17, QR 19, talmanus) | Implementerat; verifieras i workbench. |
 | Responsivitet (ingen horisontell scroll, läsbart på liten skärm) | `useFitScale` + media-queries; verifieras i workbench. |
 
 > Faktisk build-/paketeringsstatus framgår av körningen i samband med leverans.
@@ -131,8 +140,8 @@ Bild 01–05 är rent CSS/text och refererar **inga** bildfiler. Skärmdumparna 
 1. **SPFx 1.21.1** valdes enligt önskemål ("senaste 1.21.x"). Notera att absolut
    senaste SPFx är 1.23.1 vid skrivande stund — versionsbyte är enkelt (endast
    versionspinnar i `package.json`/`tsconfig`).
-2. "Första 5 bilderna" tolkas som testleverans; arkitektur + interaktions­primitiver
-   är byggda så att bild 06–29 är ett rent innehålls-/datasteg.
+2. Alla 29 bilder migrerade. Varje bild är en egen React-komponent i
+   `components/slides/`, registrerad i `data/slides.ts`.
 3. Backupbilder (B1/B2) använder konfigurerbar bild-URL i stället för drag-och-släpp.
 4. Talmanus hämtas från `data-speaker-notes` i `v11` (inte från det separata
    `Talmanus … .html`, som är presentatörsstöd snarare än bildinnehåll).
