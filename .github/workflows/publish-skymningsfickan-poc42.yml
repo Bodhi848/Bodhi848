@@ -1,0 +1,52 @@
+name: Publish Skymningsfickan POC 42
+
+on:
+  push:
+    branches:
+      - M
+    paths:
+      - .publish/poc42/READY
+
+permissions:
+  contents: write
+
+jobs:
+  assemble-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          ref: M
+          fetch-depth: 0
+
+      - name: Skip follow-up run after cleanup
+        id: ready
+        shell: bash
+        run: |
+          if [ -f .publish/poc42/READY ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Assemble single-file build
+        if: steps.ready.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p prototypes/BJCwcVYO33w1GvBN1brw
+          cat .publish/poc42/chunk-* | base64 --decode > prototypes/BJCwcVYO33w1GvBN1brw/index.html
+          echo "d2058b531af69029d83fdef3437a4733c24433df35a10f192e9d729a45366b46  prototypes/BJCwcVYO33w1GvBN1brw/index.html" | sha256sum --check
+
+      - name: Commit immutable test build
+        if: steps.ready.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add prototypes/BJCwcVYO33w1GvBN1brw/index.html
+          git rm -r .publish/poc42
+          git commit -m "Add Skymningsfickan POC 42 test build"
+          git push origin HEAD:M
