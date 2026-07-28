@@ -1,0 +1,35 @@
+name: Tag Skymningsfickan POC 42
+
+on:
+  push:
+    branches:
+      - M
+    paths:
+      - .publish/poc42-tag/READY
+
+permissions:
+  contents: write
+
+jobs:
+  tag-build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch M
+        uses: actions/checkout@v4
+        with:
+          ref: M
+          fetch-depth: 0
+
+      - name: Verify and tag immutable build
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f prototypes/BJCwcVYO33w1GvBN1brw/index.html
+          echo "d2058b531af69029d83fdef3437a4733c24433df35a10f192e9d729a45366b46  prototypes/BJCwcVYO33w1GvBN1brw/index.html" | sha256sum --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .publish/poc42-tag/READY
+          git commit -m "Finalize Skymningsfickan POC 42 tag"
+          git tag -a skymningsfickan-poc42-d2058b53 -m "Skymningsfickan POC 42"
+          git push origin HEAD:M
+          git push origin skymningsfickan-poc42-d2058b53
