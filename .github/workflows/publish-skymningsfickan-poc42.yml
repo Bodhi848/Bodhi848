@@ -36,7 +36,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p prototypes/BJCwcVYO33w1GvBN1brw
-          cat .publish/poc42/part-* | base64 --decode | gzip --decompress > prototypes/BJCwcVYO33w1GvBN1brw/index.html
+          cat .publish/poc42/chunk-* | base64 --decode | gzip --decompress > prototypes/BJCwcVYO33w1GvBN1brw/index.html
           echo "d2058b531af69029d83fdef3437a4733c24433df35a10f192e9d729a45366b46  prototypes/BJCwcVYO33w1GvBN1brw/index.html" | sha256sum --check
 
       - name: Commit immutable test build
