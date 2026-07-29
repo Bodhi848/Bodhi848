@@ -6,77 +6,65 @@ on:
       - M
     paths:
       - .publish/poc42/READY
-  pull_request:
-    branches:
-      - M
-    paths:
-      - .publish/poc42-pr/READY
 
 permissions:
   contents: write
 
 jobs:
-  assemble-and-publish:
+  assemble-verify-publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out publication branch
+      - name: Check out branch M
         uses: actions/checkout@v4
         with:
           ref: M
           fetch-depth: 0
 
-      - name: Confirm staged publication data
-        id: ready
-        shell: bash
-        run: |
-          if [ -f .publish/poc42/READY ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Validate staged chunks
-        if: steps.ready.outputs.present == 'true'
-        shell: bash
-        run: |
-          set -u
-          failures=0
-          for file in .publish/poc42/chunk-*; do
-            bytes=$(wc -c < "$file")
-            if base64 --decode "$file" > /tmp/poc42-part.bin 2>/tmp/poc42-error.txt; then
-              decoded=$(wc -c < /tmp/poc42-part.bin)
-              state=OK
-            else
-              decoded=$(wc -c < /tmp/poc42-part.bin)
-              state=FAIL
-              failures=$((failures + 1))
-            fi
-            printf '%s encoded=%s decoded=%s state=%s\n' "$file" "$bytes" "$decoded" "$state"
-            if [ -s /tmp/poc42-error.txt ]; then cat /tmp/poc42-error.txt; fi
-          done
-          echo "chunk_failures=$failures"
-
-      - name: Assemble verified single-file build
-        if: steps.ready.outputs.present == 'true'
+      - name: Assemble and verify exact single-file build
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p prototypes/BJCwcVYO33w1GvBN1brw
-          {
-            for file in .publish/poc42/chunk-*; do
-              base64 --decode "$file"
-            done
-          } | gzip --decompress > prototypes/BJCwcVYO33w1GvBN1brw/index.html
-          echo "d2058b531af69029d83fdef3437a4733c24433df35a10f192e9d729a45366b46  prototypes/BJCwcVYO33w1GvBN1brw/index.html" | sha256sum --check
 
-      - name: Commit immutable test build
-        if: steps.ready.outputs.present == 'true'
+          test -f .publish/poc42/READY
+          for part in 00 01 02 03 04 05 06 07 09 10; do
+            test -f ".publish/poc42/chunk-${part}"
+          done
+          for part in 00 01 02 03 04; do
+            test -f ".publish/poc42-fixed/chunk-08-${part}"
+          done
+          for part in 00 01 02; do
+            test -f ".publish/poc42-fixed/chunk-11-${part}"
+          done
+
+          : > /tmp/poc42.gz
+          for part in 00 01 02 03 04 05 06 07; do
+            tr -d '\r\n ' < ".publish/poc42/chunk-${part}" | base64 --decode >> /tmp/poc42.gz
+          done
+          cat .publish/poc42-fixed/chunk-08-* | tr -d '\r\n ' | base64 --decode >> /tmp/poc42.gz
+          tr -d '\r\n ' < .publish/poc42/chunk-09 | base64 --decode >> /tmp/poc42.gz
+          tr -d '\r\n ' < .publish/poc42/chunk-10 | base64 --decode >> /tmp/poc42.gz
+          cat .publish/poc42-fixed/chunk-11-* | tr -d '\r\n ' | base64 --decode >> /tmp/poc42.gz
+
+          gzip --test /tmp/poc42.gz
+          mkdir -p prototypes/BJCwcVYO33w1GvBN1brw
+          gzip --decompress --stdout /tmp/poc42.gz > prototypes/BJCwcVYO33w1GvBN1brw/index.html
+
+          test "$(wc -c < prototypes/BJCwcVYO33w1GvBN1brw/index.html)" -eq 336986
+          echo "d2058b531af69029d83fdef3437a4733c24433df35a10f192e9d729a45366b46  prototypes/BJCwcVYO33w1GvBN1brw/index.html" | sha256sum --check
+          head -c 15 prototypes/BJCwcVYO33w1GvBN1brw/index.html | grep -q '<!doctype html>'
+          grep -q '<title>Skymningsfickan, kärntest POC 42</title>' prototypes/BJCwcVYO33w1GvBN1brw/index.html
+
+      - name: Commit clean immutable publication
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
           git add prototypes/BJCwcVYO33w1GvBN1brw/index.html
-          git rm -r .publish/poc42
+          git rm -r --ignore-unmatch .publish/poc42 .publish/poc42-fixed .publish/poc42-pr .publish/poc42-tag
+          git rm --ignore-unmatch .github/workflows/publish-skymningsfickan-poc42.yml
+          git rm --ignore-unmatch .github/workflows/tag-skymningsfickan-poc42.yml
+
           git commit -m "Add Skymningsfickan POC 42 test build"
           git push origin HEAD:M
