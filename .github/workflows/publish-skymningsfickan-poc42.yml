@@ -35,13 +35,28 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Validate staged chunks
+        if: steps.ready.outputs.present == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          for file in .publish/poc42/chunk-*; do
+            bytes=$(wc -c < "$file")
+            if LC_ALL=C grep -q '[^A-Za-z0-9+/=[:space:]]' "$file"; then
+              state=INVALID
+            else
+              state=OK
+            fi
+            printf '%s bytes=%s charset=%s\n' "$file" "$bytes" "$state"
+          done
+
       - name: Assemble verified single-file build
         if: steps.ready.outputs.present == 'true'
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p prototypes/BJCwcVYO33w1GvBN1brw
-          cat .publish/poc42/chunk-* | base64 --decode | gzip --decompress > prototypes/BJCwcVYO33w1GvBN1brw/index.html
+          cat .publish/poc42/chunk-* | tr -d '\r\n\t ' | base64 --decode | gzip --decompress > prototypes/BJCwcVYO33w1GvBN1brw/index.html
           echo "d2058b531af69029d83fdef3437a4733c24433df35a10f192e9d729a45366b46  prototypes/BJCwcVYO33w1GvBN1brw/index.html" | sha256sum --check
 
       - name: Commit immutable test build
