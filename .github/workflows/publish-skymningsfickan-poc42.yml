@@ -39,16 +39,22 @@ jobs:
         if: steps.ready.outputs.present == 'true'
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
+          failures=0
           for file in .publish/poc42/chunk-*; do
             bytes=$(wc -c < "$file")
-            if LC_ALL=C grep -q '[^A-Za-z0-9+/=[:space:]]' "$file"; then
-              state=INVALID
-            else
+            if base64 --decode "$file" > /tmp/poc42-part.bin 2>/tmp/poc42-error.txt; then
+              decoded=$(wc -c < /tmp/poc42-part.bin)
               state=OK
+            else
+              decoded=$(wc -c < /tmp/poc42-part.bin)
+              state=FAIL
+              failures=$((failures + 1))
             fi
-            printf '%s bytes=%s charset=%s\n' "$file" "$bytes" "$state"
+            printf '%s encoded=%s decoded=%s state=%s\n' "$file" "$bytes" "$decoded" "$state"
+            if [ -s /tmp/poc42-error.txt ]; then cat /tmp/poc42-error.txt; fi
           done
+          echo "chunk_failures=$failures"
 
       - name: Assemble verified single-file build
         if: steps.ready.outputs.present == 'true'
