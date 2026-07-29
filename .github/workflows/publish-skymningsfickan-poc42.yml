@@ -6,6 +6,11 @@ on:
       - M
     paths:
       - .publish/poc42/READY
+  pull_request:
+    branches:
+      - M
+    paths:
+      - .publish/poc42-pr/READY
 
 permissions:
   contents: write
@@ -14,13 +19,13 @@ jobs:
   assemble-and-publish:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out repository
+      - name: Check out publication branch
         uses: actions/checkout@v4
         with:
           ref: M
           fetch-depth: 0
 
-      - name: Skip follow-up run after cleanup
+      - name: Confirm staged publication data
         id: ready
         shell: bash
         run: |
@@ -30,7 +35,7 @@ jobs:
             echo "present=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Assemble single-file build
+      - name: Assemble verified single-file build
         if: steps.ready.outputs.present == 'true'
         shell: bash
         run: |
