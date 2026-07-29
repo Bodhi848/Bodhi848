@@ -1,0 +1,50 @@
+name: Verify Skymningsfickan POC 42 RawCDN
+
+on:
+  pull_request:
+    branches:
+      - M
+    paths:
+      - .publish/poc42-pr/VERIFY
+
+permissions:
+  contents: read
+
+jobs:
+  verify-rawcdn:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify immutable RawCDN response
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://rawcdn.githack.com/Bodhi848/Bodhi848/a9982b60e5f08d23fae9de756d272134048b6269/prototypes/BJCwcVYO33w1GvBN1brw/index.html"
+          expected_sha="d2058b531af69029d83fdef3437a4733c24433df35a10f192e9d729a45366b46"
+
+          for attempt in $(seq 1 12); do
+            rm -f /tmp/poc42.html /tmp/poc42.headers
+            status=$(curl --silent --show-error --location \
+              --dump-header /tmp/poc42.headers \
+              --output /tmp/poc42.html \
+              --write-out '%{http_code}' \
+              "$url" || true)
+            content_type=$(awk 'BEGIN{IGNORECASE=1} /^content-type:/{value=$0} END{sub(/^[^:]*:[[:space:]]*/, "", value); sub(/\r$/, "", value); print value}' /tmp/poc42.headers)
+            actual_sha=$(sha256sum /tmp/poc42.html 2>/dev/null | awk '{print $1}')
+
+            echo "attempt=$attempt status=$status content_type=$content_type sha256=$actual_sha"
+
+            if [ "$status" = "200" ] \
+              && [[ "$content_type" == text/html* ]] \
+              && [ "$actual_sha" = "$expected_sha" ]; then
+              head -c 80 /tmp/poc42.html
+              echo
+              echo "RAWCDN_VERIFIED"
+              exit 0
+            fi
+
+            sleep 10
+          done
+
+          echo "RawCDN verification failed after retries" >&2
+          cat /tmp/poc42.headers >&2 || true
+          exit 1
