@@ -6,7 +6,7 @@ on:
       - M
     paths:
       - .publish/poc50-qLNjKQ0hnwG03xCPHju70E/READY
-  issues:
+  pull_request:
     types:
       - opened
   workflow_dispatch:
@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   assemble-verify-publish:
-    if: github.event_name != 'issues' || github.event.issue.title == 'Publish POC 50 qLNjKQ0hnwG03xCPHju70E'
+    if: github.event_name != 'pull_request' || github.event.pull_request.title == 'Publish POC 50 qLNjKQ0hnwG03xCPHju70E'
     runs-on: ubuntu-latest
     steps:
       - name: Check out branch M
