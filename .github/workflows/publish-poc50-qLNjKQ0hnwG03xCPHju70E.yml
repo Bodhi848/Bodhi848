@@ -43,7 +43,7 @@ jobs:
           test "$PUBLICATION_ID" = "qLNjKQ0hnwG03xCPHju70E"
           test "$EXPECTED_BYTES" = "406738"
           test "$EXPECTED_SHA256" = "117efba969bb5392d16ffa2f88829793b46d9e9b7200e733208378d4ff4d4647"
-          test "$PART_COUNT" = "3"
+          test "$PART_COUNT" = "8"
           test ! -e "$TARGET"
 
           mapfile -d '' PARTS < <(
