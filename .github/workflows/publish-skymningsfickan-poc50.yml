@@ -1,0 +1,79 @@
+name: Publish Skymningsfickan POC 50
+
+on:
+  push:
+    branches:
+      - M
+    paths:
+      - .publish/poc50/READY
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-skymningsfickan-poc50
+  cancel-in-progress: false
+
+jobs:
+  assemble-verify-publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out branch M
+        uses: actions/checkout@v4
+        with:
+          ref: M
+          fetch-depth: 0
+
+      - name: Assemble and verify exact single-file build
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          source .publish/poc50/MANIFEST.env
+
+          test "$POC_NUMBER" = "50"
+          test -f .publish/poc50/READY
+          test -d .publish/poc50/parts
+
+          mapfile -t parts < <(find .publish/poc50/parts \
+            -maxdepth 1 -type f -name 'part-*.b64' | sort)
+
+          test "${#parts[@]}" -eq "$PART_COUNT"
+
+          : > /tmp/poc50.gz
+
+          for part in "${parts[@]}"; do
+            echo "Decoding $part"
+            tr -d '\r\n\t ' < "$part" | base64 --decode >> /tmp/poc50.gz
+          done
+
+          gzip --test /tmp/poc50.gz
+
+          target="prototypes/rPFEX3Hu9p4ZQDK4eZOU/index.html"
+          mkdir -p "$(dirname "$target")"
+          gzip --decompress --stdout /tmp/poc50.gz > "$target"
+
+          test "$(wc -c < "$target")" -eq "$EXPECTED_BYTES"
+          echo "$EXPECTED_SHA256  $target" | sha256sum --check
+          head -c 15 "$target" | grep -qi '<!doctype html>'
+          grep -Fq '<title>Skymningsfickan, kärntest POC 50</title>' "$target"
+
+      - name: Commit clean immutable publication
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          target="prototypes/rPFEX3Hu9p4ZQDK4eZOU/index.html"
+
+          git add "$target"
+          git rm -r --ignore-unmatch .publish/poc50
+          git rm --ignore-unmatch \
+            .github/workflows/publish-skymningsfickan-poc50.yml
+
+          git commit -m "Add Skymningsfickan POC 50 test build"
+          git push origin HEAD:M
