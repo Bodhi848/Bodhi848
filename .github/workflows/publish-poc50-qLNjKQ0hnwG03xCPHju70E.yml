@@ -6,6 +6,10 @@ on:
       - M
     paths:
       - .publish/poc50-qLNjKQ0hnwG03xCPHju70E/READY
+  issues:
+    types:
+      - opened
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,6 +20,7 @@ concurrency:
 
 jobs:
   assemble-verify-publish:
+    if: github.event_name != 'issues' || github.event.issue.title == 'Publish POC 50 qLNjKQ0hnwG03xCPHju70E'
     runs-on: ubuntu-latest
     steps:
       - name: Check out branch M
