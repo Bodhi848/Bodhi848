@@ -1,0 +1,87 @@
+name: Publish Skymningsfickan POC 50
+
+on:
+  push:
+    branches:
+      - M
+    paths:
+      - .publish/poc50-qLNjKQ0hnwG03xCPHju70E/READY
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-skymningsfickan-poc50-qLNjKQ0hnwG03xCPHju70E
+  cancel-in-progress: false
+
+jobs:
+  assemble-verify-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch M
+        uses: actions/checkout@v4
+        with:
+          ref: M
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Assemble and verify exact single-file HTML
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WORK=".publish/poc50-qLNjKQ0hnwG03xCPHju70E"
+          TARGET="prototypes/qLNjKQ0hnwG03xCPHju70E/index.html"
+          WORKFLOW=".github/workflows/publish-poc50-qLNjKQ0hnwG03xCPHju70E.yml"
+
+          test -f "$WORK/READY"
+          test -f "$WORK/MANIFEST.env"
+          # shellcheck disable=SC1090
+          source "$WORK/MANIFEST.env"
+
+          test "$POC_NUMBER" = "50"
+          test "$PUBLICATION_ID" = "qLNjKQ0hnwG03xCPHju70E"
+          test "$EXPECTED_BYTES" = "406738"
+          test "$EXPECTED_SHA256" = "117efba969bb5392d16ffa2f88829793b46d9e9b7200e733208378d4ff4d4647"
+          test "$PART_COUNT" = "3"
+          test ! -e "$TARGET"
+
+          mapfile -d '' PARTS < <(
+            find "$WORK/parts" -maxdepth 1 -type f -name 'part-*.b64' -print0 | sort -z
+          )
+          test "${#PARTS[@]}" -eq "$PART_COUNT"
+
+          : > /tmp/skymningsfickan-poc50.html.gz
+          for part in "${PARTS[@]}"; do
+            tr -d '\r\n\t ' < "$part" | base64 --decode >> /tmp/skymningsfickan-poc50.html.gz
+          done
+
+          gzip --test /tmp/skymningsfickan-poc50.html.gz
+          mkdir -p "$(dirname "$TARGET")"
+          gzip --decompress --stdout /tmp/skymningsfickan-poc50.html.gz > "$TARGET"
+
+          ACTUAL_BYTES="$(wc -c < "$TARGET" | tr -d ' ')"
+          ACTUAL_SHA256="$(sha256sum "$TARGET" | awk '{print $1}')"
+
+          test "$ACTUAL_BYTES" = "$EXPECTED_BYTES"
+          test "$ACTUAL_SHA256" = "$EXPECTED_SHA256"
+          head -c 15 "$TARGET" | grep -qi '<!doctype html>'
+          grep -Fq '<title>Skymningsfickan, kärntest POC 50</title>' "$TARGET"
+          tail -n 20 "$TARGET" | grep -Fq '</html>'
+
+          rm -rf "$WORK"
+          rm -f "$WORKFLOW"
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- "$TARGET" "$WORK" "$WORKFLOW"
+          git commit -m "Add Skymningsfickan POC 50 test build"
+          git push origin HEAD:M
+
+          {
+            echo "## Skymningsfickan POC 50 publicerad"
+            echo ""
+            echo "- Byte: $ACTUAL_BYTES"
+            echo "- SHA-256: $ACTUAL_SHA256"
+            echo "- Sökväg: $TARGET"
+          } >> "$GITHUB_STEP_SUMMARY"
